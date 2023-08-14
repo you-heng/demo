@@ -1,0 +1,46 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.20.1]
+
+    steps:
+    - uses: actions/checkout@master
+    - name: Build
+      uses: actions/setup-node@master
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm install yarn -g
+    - run: yarn install
+    - run: yarn build
+
+    - name: Delete
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: |
+          rm -rf /www/wwwroot/vue.anmixiu.com/demo/*
+          
+    - name: Upload
+      uses: wlixcc/SFTP-Deploy-Action@v1.0
+      with:
+        server: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        local_path: './dist/*'
+        remote_path: '/www/wwwroot/vue.anmixiu.com/demo'
+      
